@@ -42,35 +42,31 @@ src/main/java/com/yourcompany/yourapp/
 
 #### Sequence Diagram  : 
 ```mermaid
-    sequenceDiagram
-    participant Client as Client (e.g. Admin UI / Postman)
-    participant Controller as FileUploadController
-    participant JobLauncher as JobLauncherService
-    participant BatchJob as Spring Batch Job
-    participant Reader as CSVReader
-    participant Processor as ItemProcessor
-    participant Writer as ItemWriter (JPA)
-    participant DB as PostgreSQL Database
+sequenceDiagram
+    participant User
+    participant Controller
+    participant JobLauncher
+    participant Job (importJob)
+    participant Step (step1)
+    participant Reader
+    participant Processor
+    participant Writer
+    participant Database
 
-    Client->>Controller: POST /upload-csv (multipart CSV)
-    Controller->>Controller: Save CSV to temp file
-    Controller->>JobLauncher: Launch Batch Job with filePath param
-    JobLauncher->>BatchJob: importUserJob.run(filePath)
-
-    activate BatchJob
-    loop each chunk (e.g. 10 records)
-        BatchJob->>Reader: Read line from CSV
-        Reader-->>BatchJob: User object
-        BatchJob->>Processor: Process User (validate, transform)
-        Processor-->>BatchJob: Transformed User
-        BatchJob->>Writer: Write to DB
-        Writer->>DB: INSERT User
+    User->>Controller: POST /upload-expenses with CSV
+    Controller->>JobLauncher: jobLauncher.run(importJob, params)
+    JobLauncher->>Job (importJob): Start Job with filePath param
+    Job->>Step (step1): Start Step
+    loop for each line in CSV
+        Step (step1)->>Reader: Read Expense from CSV
+        Reader-->>Step (step1): Expense
+        Step (step1)->>Processor: Clean/transform Expense
+        Processor-->>Step (step1): Processed Expense
+        Step (step1)->>Writer: Save Expense
+        Writer->>Database: Insert Expense row
     end
-    deactivate BatchJob
-
-    BatchJob-->>JobLauncher: Job completion status
-    JobLauncher-->>Controller: Job launched successfully
-    Controller-->>Client: 200 OK (Job started)
+    Step (step1)->>Job: Step completed
+    Job->>JobLauncher: Job completed
 ````
 
 
