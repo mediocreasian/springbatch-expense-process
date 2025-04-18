@@ -21,16 +21,13 @@ src/main/java/com/example/expense/
 │   └── Expense.java                          # JPA entity representing a row in the 'expenses' table
 │
 ├── jobs/                                     # All logic related to the Spring Batch job
-│   ├── listener/                             # Optional: listeners that run on job start/finish (e.g., logging, auditing)
-│   ├── processor/
-│   │   └── ExpenseProcessor.java             # Cleans and transforms the Expense data (e.g., lowercase category)
-│   ├── reader/
-│   │   └── ExpenseCSVReader.java             # Reads and maps CSV data into Expense objects
-│   └── writer/
-│       └── ExpenseWriter.java                # Writes Expense objects to DB using a JPA repository
-│
-├── repository/
-│   └── ExpenseRepository.java                # Spring Data JPA repository for CRUD operations on Expense entity
+   ├── listener/                             # Optional: listeners that run on job start/finish (e.g., logging, auditing)
+   ├── processor/
+   │   └── ExpenseProcessor.java             # Cleans and transforms the Expense data (e.g., lowercase category)
+   ├── reader/
+   │   └── ExpenseCSVReader.java             # Reads and maps CSV data into Expense objects
+   └── writer/
+       └── ExpenseWriter.java                # Writes Expense objects to DB using a JPA repository
 ````
 
 
