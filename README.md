@@ -18,7 +18,7 @@ src/main/java/com/yourcompany/yourapp/
 ├── dto/
 │   └── UploadResultDTO.java          # Optional DTOs for responses
 │
-├── services/                              # <-- Batch-related logic
+├── jobs/                              # <-- Batch-related logic
 │   ├── JobLauncherService.java       # Manually triggers batch jobs
 │   ├── listener/
 │   │   └── JobCompletionListener.java # Runs logic after job ends
