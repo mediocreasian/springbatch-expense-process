@@ -1,0 +1,21 @@
+services:
+  springboot-expense-app:
+    build:
+      context: .
+      dockerfile: Dockerfile # Refers to the Dockerfile for your Spring Boot app
+    container_name: expense-springboot-container
+    environment:
+      SPRING_PROFILES_ACTIVE: container # Ensure 'container' profile is active
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/Passwords
+      SPRING_DATASOURCE_USERNAME: username
+      SPRING_DATASOURCE_PASSWORD: password
+    volumes:
+      - ./db-changelog:/app/db-changelog  # ✅ Mounts changelog outside container
+    depends_on:
+      postgres:
+        condition: service_healthy  # ✅ Ensures dbGate starts only after PostgreSQL is ready
+    networks:
+      - shared_network # Attach to the shared network
+networks:
+  shared_network:
+    external: true # Declare the shared network as external
