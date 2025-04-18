@@ -56,7 +56,7 @@ public class BatchConfig {
 
         // Build StepBuilder manually using jobRepository and transactionManager
         return new StepBuilder("step1", jobRepository)
-                .<Expense, Expense>chunk(10,transactionManager)
+                .<Expense, Expense>chunk(1000, transactionManager) // Larger chunk size for batch inserts
                 .reader(reader)
                 .processor(processor)
                 .writer(writer)

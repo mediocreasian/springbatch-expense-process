@@ -6,67 +6,63 @@
 
 #### Folder Structure : 
 ````
-src/main/java/com/yourcompany/yourapp/
-├── YourAppApplication.java
+src/main/java/com/example/expense/
+├── ExpenseApplication.java                   # Main Spring Boot application entry point
 │
 ├── config/
-│   └── BatchConfig.java              # Spring Batch job/step config
+│   └── BatchConfig.java                      # Core Batch config: defines Job, Step, Reader/Processor/Writer wiring
 │
 ├── controller/
-│   └── FileUploadController.java     # REST controller for uploading CSV
+│   └── FileUploadController.java             # Handles file upload requests and triggers batch job via JobLauncher
 │
-├── dto/
-│   └── UploadResultDTO.java          # Optional DTOs for responses
+├── dto/                                      # Optional DTOs for response or input (currently unused)
 │
-├── jobs/                              # <-- Batch-related logic
-│   ├── JobLauncherService.java       # Manually triggers batch jobs
-│   ├── listener/
-│   │   └── JobCompletionListener.java # Runs logic after job ends
+├── entity/
+│   └── Expense.java                          # JPA entity representing a row in the 'expenses' table
+│
+├── jobs/                                     # All logic related to the Spring Batch job
+│   ├── listener/                             # Optional: listeners that run on job start/finish (e.g., logging, auditing)
 │   ├── processor/
-│   │   └── UserItemProcessor.java    # Transform input data
+│   │   └── ExpenseProcessor.java             # Cleans and transforms the Expense data (e.g., lowercase category)
 │   ├── reader/
-│   │   └── UserCSVReader.java        # Reads CSV (can be inline in config)
-│   ├── writer/
-│   │   └── UserDBWriter.java         # Writes to JPA or repository
-│
-├── model/
-│   └── User.java                     # Your entity mapped to DB
+│   │   └── ExpenseCSVReader.java             # Reads and maps CSV data into Expense objects
+│   └── writer/
+│       └── ExpenseWriter.java                # Writes Expense objects to DB using a JPA repository
 │
 ├── repository/
-│   └── UserRepository.java           # Spring Data JPA repository
-│
-└── service/
-└── UserService.java              # Business logic (e.g., used by controller)
+│   └── ExpenseRepository.java                # Spring Data JPA repository for CRUD operations on Expense entity
 ````
 
 
 #### Sequence Diagram  : 
 ```mermaid
 sequenceDiagram
-    participant User
+    autonumber
+    participant Client
     participant Controller
     participant JobLauncher
-    participant Job (importJob)
-    participant Step (step1)
+    participant Job
+    participant Step
     participant Reader
     participant Processor
     participant Writer
     participant Database
 
-    User->>Controller: POST /upload-expenses with CSV
-    Controller->>JobLauncher: jobLauncher.run(importJob, params)
-    JobLauncher->>Job (importJob): Start Job with filePath param
-    Job (importJob)->>Step (step1): Start Step
-    loop for each line in CSV
-        Step (step1)->>Reader: Read Expense from CSV
-        Reader-->>Step (step1): Expense
-        Step (step1)->>Processor: Clean/transform Expense
-        Processor-->>Step (step1): Processed Expense
-        Step (step1)->>Writer: Save Expense
-        Writer->>Database: Insert Expense row
+    Client->>Controller: POST /upload-expenses (CSV)
+    Controller->>JobLauncher: jobLauncher.run(importJob, JobParameters)
+    JobLauncher->>Job: importJob.run()
+    Job->>Step: Execute step1
+    loop for each chunk (e.g. 1000 records)
+        Step->>Reader: expenseReader.read()
+        Reader->>Step: Expense[]
+        Step->>Processor: process(expense)
+        Processor->>Step: processedExpense
+        Step->>Writer: write(List<processedExpense>)
+        Writer->>Database: JPA bulk insert
     end
-    Step (step1)->>Job (importJob): Step completed
-    Job (importJob)->>JobLauncher: Job completed
+    Step->>Job: Step complete
+    Job->>JobLauncher: Job complete
+    Controller-->>Client: 200 OK: Batch job started
 ````
 
 
