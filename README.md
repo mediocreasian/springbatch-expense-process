@@ -65,4 +65,7 @@ sequenceDiagram
     Controller-->>Client: 200 OK: Batch job started
 ````
 
+To test via MANUAL Curl: 
+ curl -X POST -F "file=@expense.csv" http://localhost:8444/upload-expenses
+
 
