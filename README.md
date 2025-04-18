@@ -56,7 +56,7 @@ sequenceDiagram
     User->>Controller: POST /upload-expenses with CSV
     Controller->>JobLauncher: jobLauncher.run(importJob, params)
     JobLauncher->>Job (importJob): Start Job with filePath param
-    Job->>Step (step1): Start Step
+    Job (importJob)->>Step (step1): Start Step
     loop for each line in CSV
         Step (step1)->>Reader: Read Expense from CSV
         Reader-->>Step (step1): Expense
@@ -65,8 +65,8 @@ sequenceDiagram
         Step (step1)->>Writer: Save Expense
         Writer->>Database: Insert Expense row
     end
-    Step (step1)->>Job: Step completed
-    Job->>JobLauncher: Job completed
+    Step (step1)->>Job (importJob): Step completed
+    Job (importJob)->>JobLauncher: Job completed
 ````
 
 
