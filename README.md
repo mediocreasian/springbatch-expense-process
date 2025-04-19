@@ -31,7 +31,7 @@ src/main/java/com/example/expense/
 ````
 
 
-#### Sequence Diagram  : 
+#### Sequence Diagram  of Import Job : 
 ```mermaid
 sequenceDiagram
     autonumber
@@ -61,8 +61,42 @@ sequenceDiagram
     Job->>JobLauncher: Job complete
     Controller-->>Client: 200 OK: Batch job started
 ````
+--- 
+#### Sequence Diagram  of Convert Job :
 
-To test via MANUAL Curl: 
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant JobLauncher
+    participant convertJob
+    participant convertStep
+    participant DBReader
+    participant GSTProcessor
+    participant CSVWriter
+    participant EmailListener
+
+    Client->>Controller: POST /convert-expenses?email=xyz@example.com
+    Controller->>JobLauncher: run(convertJob, jobParams)
+    JobLauncher->>convertJob: start()
+    convertJob->>convertStep: execute()
+    loop For each chunk
+        convertStep->>DBReader: read()
+        DBReader-->>convertStep: Expense
+        convertStep->>GSTProcessor: process(Expense)
+        GSTProcessor-->>convertStep: ExpenseWithGST
+        convertStep->>CSVWriter: write(ExpenseWithGST)
+    end
+    convertStep-->>convertJob: step completed
+    convertJob->>EmailListener: afterJob()
+    EmailListener->>SMTP Server: send email with CSV
+    EmailListener-->>Client: Email Sent
+```
+
+
+
+
+## To test via MANUAL Curl for import Job : 
  curl -X POST -F "file=@expense.csv" http://localhost:8444/upload-expenses
 
 
