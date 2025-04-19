@@ -15,10 +15,12 @@ public class FileUploadController {
 
     private final JobLauncher jobLauncher;
     private final Job importJob;
+    private final Job convertJob;
 
-    public FileUploadController(JobLauncher jobLauncher, Job importJob) {
+    public FileUploadController(JobLauncher jobLauncher, Job importJob,Job convertJob) {
         this.jobLauncher = jobLauncher;
         this.importJob = importJob;
+        this.convertJob = convertJob;
     }
 
     // Endpoint to accept uploaded expense CSV
@@ -35,5 +37,16 @@ public class FileUploadController {
         jobLauncher.run(importJob, params);
 
         return ResponseEntity.ok("Batch job started for: " + file.getOriginalFilename());
+    }
+
+    @PostMapping("/convert-expenses")
+    public ResponseEntity<String> runConvertJob(@RequestParam("email") String email) throws Exception {
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("email", email)
+                .addLong("timestamp", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(convertJob, jobParameters);
+        return ResponseEntity.ok("Convert Job started and will email to: " + email);
     }
 }
