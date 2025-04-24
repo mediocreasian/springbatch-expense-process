@@ -23,7 +23,7 @@ public class ExpenseDBReader {
         JpaPagingItemReader<Expense> reader = new JpaPagingItemReader<>();
         reader.setQueryString("SELECT e FROM Expense e");
         reader.setEntityManagerFactory(emf);
-        reader.setPageSize(100);
+        reader.setPageSize(100); // * Limit 100 offset 0 then will limit 100 and offset 100 until all data is read
         reader.setSaveState(true);
         return reader;
     }

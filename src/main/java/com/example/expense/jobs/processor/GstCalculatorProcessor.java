@@ -26,4 +26,5 @@ public class GstCalculatorProcessor {
             return new ExpenseWithGST(expense.getDate(), amount, rate, gst);
         };
     }
+
 }

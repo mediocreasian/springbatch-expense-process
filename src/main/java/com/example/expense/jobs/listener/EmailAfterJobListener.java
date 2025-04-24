@@ -20,11 +20,12 @@ import java.util.List;
 
 @Configuration
 public class EmailAfterJobListener {
-    /*
+
     @Bean
     @JobScope
     public JobExecutionListener emailAfterJob(@Value("#{jobParameters['email']}") String email,
                                               JavaMailSender mailSender) {
+
         return new JobExecutionListener() {
             @Override
             public void afterJob(JobExecution jobExecution) {
@@ -55,7 +56,7 @@ public class EmailAfterJobListener {
             }
         };
     }
-    */
+    /*
     @Bean
     @JobScope
     public JobExecutionListener emailAfterJob(@Value("#{jobParameters['email']}") String email) {
@@ -82,6 +83,6 @@ public class EmailAfterJobListener {
             }
         };
     }
-
+    */
 
 }
