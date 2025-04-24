@@ -4,6 +4,7 @@ import com.example.expense.entity.Expense;
 
 import org.springframework.batch.core.configuration.annotation.StepScope;
 
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -35,6 +37,23 @@ public class ExpenseCSVReader {
         reader.setLinesToSkip(2); // Skip title + headers
         reader.setLineMapper(expenseLineMapper());
         return reader;
+    }
+
+    @Bean
+    @StepScope
+    public ItemReader<File> fileReader(@Value("#{jobParameters['filePath']}") String filePath) {
+        return new ItemReader<>() {
+            private boolean read = false;
+
+            @Override
+            public File read() throws Exception {
+                if (!read) {
+                    read = true;
+                    return new File(filePath);
+                }
+                return null;
+            }
+        };
     }
 
     // Mapping CSV lines to Expense objects

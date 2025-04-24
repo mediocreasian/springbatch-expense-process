@@ -3,6 +3,7 @@ package com.example.expense.config;
 import com.example.expense.dto.ExpenseWithGST;
 import com.example.expense.entity.Expense;
 
+import io.minio.MinioClient;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
@@ -19,6 +20,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.io.File;
+
 // Marks this class as a configuration class for Spring to scan and load
 @Configuration
 
@@ -28,10 +31,12 @@ public class BatchConfig {
     // Job → Step → Reader → Processor → Writer
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
+    private final MinioClient minioClient;
 
-    public BatchConfig(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+    public BatchConfig(JobRepository jobRepository, PlatformTransactionManager transactionManager,MinioClient minioClient) {
         this.jobRepository = jobRepository;
         this.transactionManager = transactionManager;
+        this.minioClient =minioClient;
     }
 
     // Provides a JobBuilder manually (Spring Batch 5+ requires explicit construction)
@@ -87,6 +92,28 @@ public class BatchConfig {
                 .reader(reader)
                 .processor(processor)
                 .writer(writer)
+                .build();
+    }
+
+
+    // 🔹 Step: file -> MinIO
+    @Bean
+    public Step saveToMinioStep(ItemReader<File> fileReader,
+                                ItemWriter<File> minioWriter) {
+        return new StepBuilder("saveToMinioStep", jobRepository)
+                .<File, File>chunk(1, transactionManager)
+                .reader(fileReader)
+                .writer(minioWriter)
+                .build();
+    }
+
+
+    // 🔹 Job: Run Step
+    @Bean
+    public Job saveFileToMinioJob(Step saveToMinioStep) {
+        return new JobBuilder("saveFileToMinioJob", jobRepository)
+                .incrementer(new RunIdIncrementer())
+                .start(saveToMinioStep)
                 .build();
     }
 }

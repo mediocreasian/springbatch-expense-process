@@ -16,11 +16,14 @@ public class FileUploadController {
     private final JobLauncher jobLauncher;
     private final Job importJob;
     private final Job convertJob;
+    private final Job saveFileToMinioJob;
 
-    public FileUploadController(JobLauncher jobLauncher, Job importJob,Job convertJob) {
+    public FileUploadController(JobLauncher jobLauncher, Job importJob,Job convertJob,Job saveFileToMinioJob) {
         this.jobLauncher = jobLauncher;
         this.importJob = importJob;
         this.convertJob = convertJob;
+        this.saveFileToMinioJob = saveFileToMinioJob;
+
     }
 
     // Endpoint to accept uploaded expense CSV
@@ -48,5 +51,19 @@ public class FileUploadController {
 
         jobLauncher.run(convertJob, jobParameters);
         return ResponseEntity.ok("Convert Job started and will email to: " + email);
+    }
+
+    @PostMapping("/upload-minio-batch")
+    public ResponseEntity<String> uploadAndSaveToMinio(@RequestParam MultipartFile file) throws Exception {
+        File tempFile = File.createTempFile("minio-", ".csv");
+        file.transferTo(tempFile);
+
+        JobParameters params = new JobParametersBuilder()
+                .addString("filePath", tempFile.getAbsolutePath())
+                .addLong("timestamp", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(saveFileToMinioJob, params);
+        return ResponseEntity.ok("MinIO upload job started for: " + file.getOriginalFilename());
     }
 }
