@@ -18,7 +18,7 @@ public class FileUploadController {
     private final Job convertJob;
     private final Job saveFileToMinioJob;
 
-    public FileUploadController(JobLauncher jobLauncher, Job importJob,Job convertJob,Job saveFileToMinioJob) {
+    public FileUploadController(JobLauncher jobLauncher, Job importJob, Job convertJob, Job saveFileToMinioJob) {
         this.jobLauncher = jobLauncher;
         this.importJob = importJob;
         this.convertJob = convertJob;
@@ -58,8 +58,12 @@ public class FileUploadController {
         File tempFile = File.createTempFile("minio-", ".csv");
         file.transferTo(tempFile);
 
+        String objectName = tempFile.getName();
+        
+        System.out.println("name of File :" + tempFile.getName());
         JobParameters params = new JobParametersBuilder()
                 .addString("filePath", tempFile.getAbsolutePath())
+                .addString("objectName", objectName)  // Pass to next job!
                 .addLong("timestamp", System.currentTimeMillis())
                 .toJobParameters();
 

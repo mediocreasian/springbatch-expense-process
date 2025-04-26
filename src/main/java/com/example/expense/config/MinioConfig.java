@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MinioConfig {
 
+    // * all taken from the application.properties files
     @Value("${minio.endpoint}")
     private String endpoint;
 

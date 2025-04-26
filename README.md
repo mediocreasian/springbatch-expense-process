@@ -98,5 +98,6 @@ sequenceDiagram
 
 ## To test via MANUAL Curl for import Job : 
  curl -X POST -F "file=@expense.csv" http://localhost:8444/upload-expenses
+ curl -X POST -F "file=@expense.csv" http://localhost:8444/upload-minio-batch
 
 

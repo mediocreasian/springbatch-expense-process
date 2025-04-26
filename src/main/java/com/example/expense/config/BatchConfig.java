@@ -3,6 +3,7 @@ package com.example.expense.config;
 import com.example.expense.dto.ExpenseWithGST;
 import com.example.expense.entity.Expense;
 
+import com.example.expense.jobs.listener.SaveToMinioJobCompletionListener;
 import io.minio.MinioClient;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
@@ -48,22 +49,22 @@ public class BatchConfig {
     // Defines the Job with a single step
     // Defines a Job bean named "importJob"
     @Bean
-    public Job importJob(JobBuilder jobBuilder, Step step1) {
+    public Job importJob(JobBuilder jobBuilder, Step importStep) {
         return jobBuilder
                 .incrementer(new RunIdIncrementer())
-                .start(step1)
+                .start(importStep)
                 .build();
     }
 
     // ❗ FIX: StepBuilder should NOT be injected
     // Defines the Step: read -> process -> write
     @Bean
-    public Step step1(@Qualifier("csvReader") ItemReader<Expense> reader,
+    public Step importStep(@Qualifier("expenseMinioReader") ItemReader<Expense> reader,
                       ItemProcessor<Expense, Expense> processor,
                       ItemWriter<Expense> writer) {
 
         // Build StepBuilder manually using jobRepository and transactionManager
-        return new StepBuilder("step1", jobRepository)
+        return new StepBuilder("importStep", jobRepository)
                 .<Expense, Expense>chunk(1000, transactionManager) // Larger chunk size for batch inserts
                 .reader(reader)
                 .processor(processor)
@@ -75,7 +76,7 @@ public class BatchConfig {
 
     // * Used to send email of the total amount & the
     @Bean
-    public Job convertJob(Step convertStep, JobExecutionListener emailListener) {
+    public Job convertJob(Step convertStep,    @Qualifier("emailAfterJobListener") JobExecutionListener emailListener) {
         return new JobBuilder("convertJob", jobRepository)
                 .start(convertStep)
                 .listener(emailListener)
@@ -107,13 +108,12 @@ public class BatchConfig {
                 .build();
     }
 
-
-    // 🔹 Job: Run Step
     @Bean
-    public Job saveFileToMinioJob(Step saveToMinioStep) {
+    public Job saveFileToMinioJob(Step saveToMinioStep, SaveToMinioJobCompletionListener listener) {
         return new JobBuilder("saveFileToMinioJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .start(saveToMinioStep)
+                .listener(listener) // <-- add this
                 .build();
     }
 }
