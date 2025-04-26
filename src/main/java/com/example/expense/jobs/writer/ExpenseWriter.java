@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import io.minio.MinioClient;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -17,30 +18,31 @@ import java.io.InputStream;
 @Configuration
 public class ExpenseWriter {
 
-    // Writes processed data into the database via JPA repository
+    // * Writes processed data into the database via JPA repository
     @Bean
-    public ItemWriter<Expense> writer(EntityManagerFactory entityManagerFactory) {
+    public ItemWriter<Expense> tableWriter(EntityManagerFactory entityManagerFactory) {
         JpaItemWriter<Expense> writer = new JpaItemWriter<>();
         writer.setEntityManagerFactory(entityManagerFactory);
         return writer;
     }
 
-    // 🔹 Writer: Uploads file to MinIO bucket
+    // * Writer: Uploads file to MinIO bucket
     @Bean
     public ItemWriter<File> minioWriter(MinioClient minioClient) {
         return items -> {
-            // 🔸 Ensure bucket exists
-            String bucketName = "uploads";
+            // * Ensure bucket exists
+            String bucketName = "uploads"; // TODO, revmoe this hardcode
             boolean found = minioClient.bucketExists(
                     io.minio.BucketExistsArgs.builder().bucket(bucketName).build()
             );
+
             if (!found) {
                 minioClient.makeBucket(
                         io.minio.MakeBucketArgs.builder().bucket(bucketName).build()
                 );
             }
 
-            // 🔸 Upload files
+            // *  Upload files
             for (File file : items) {
                 try (InputStream input = new FileInputStream(file)) {
                     minioClient.putObject(

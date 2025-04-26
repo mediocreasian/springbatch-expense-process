@@ -4,7 +4,6 @@ import com.example.expense.dto.ExpenseWithGST;
 import com.example.expense.entity.Expense;
 
 import com.example.expense.jobs.listener.SaveToMinioJobCompletionListener;
-import io.minio.MinioClient;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
@@ -23,64 +22,45 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.io.File;
 
-// Marks this class as a configuration class for Spring to scan and load
+// * Marks this class as a configuration class for Spring to scan and load
 @Configuration
 
-// Enables Spring Batch support and auto-configuration of batch infrastructure
+// * Enables Spring Batch support and auto-configuration of batch infrastructure
 @EnableBatchProcessing
 public class BatchConfig {
-    // Job → Step → Reader → Processor → Writer
+    // * Job → Step → Reader → Processor → Writer
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    private final MinioClient minioClient;
 
-    public BatchConfig(JobRepository jobRepository, PlatformTransactionManager transactionManager,MinioClient minioClient) {
+    public BatchConfig(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
         this.jobRepository = jobRepository;
         this.transactionManager = transactionManager;
-        this.minioClient =minioClient;
     }
 
-    // Provides a JobBuilder manually (Spring Batch 5+ requires explicit construction)
-    @Bean
-    public JobBuilder jobBuilder() {
-        return new JobBuilder("importExpenseJob", jobRepository);
-    }
-
-    // Defines the Job with a single step
-    // Defines a Job bean named "importJob"
-    @Bean
-    public Job importJob(JobBuilder jobBuilder, Step importStep) {
-        return jobBuilder
-                .incrementer(new RunIdIncrementer())
-                .start(importStep)
-                .build();
-    }
-
-    // ❗ FIX: StepBuilder should NOT be injected
-    // Defines the Step: read -> process -> write
+    // * ❗ FIX: StepBuilder should NOT be injected
+    // * Defines the Step: read -> process -> write -> listen (optional)
     @Bean
     public Step importStep(@Qualifier("expenseMinioReader") ItemReader<Expense> reader,
-                      ItemProcessor<Expense, Expense> processor,
-                      ItemWriter<Expense> writer) {
+                           ItemProcessor<Expense, Expense> processor,
+                           ItemWriter<Expense> tableWriter) {
 
-        // Build StepBuilder manually using jobRepository and transactionManager
+        // * Build StepBuilder manually using jobRepository and transactionManager
         return new StepBuilder("importStep", jobRepository)
-                .<Expense, Expense>chunk(1000, transactionManager) // Larger chunk size for batch inserts
+                .<Expense, Expense>chunk(1000, transactionManager) // * Larger chunk size for batch inserts
                 .reader(reader)
                 .processor(processor)
-                .writer(writer)
+                .writer(tableWriter)
                 .build();
 
     }
 
 
-    // * Used to send email of the total amount & the
+    // * Defines a Job bean named "importJob"
     @Bean
-    public Job convertJob(Step convertStep,    @Qualifier("emailAfterJobListener") JobExecutionListener emailListener) {
-        return new JobBuilder("convertJob", jobRepository)
-                .start(convertStep)
-                .listener(emailListener)
+    public Job importJob(Step importStep) {
+        return new JobBuilder("importExpenseJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
+                .start(importStep)
                 .build();
     }
 
@@ -88,6 +68,7 @@ public class BatchConfig {
     public Step convertStep(@Qualifier("dbReader") ItemReader<Expense> reader,
                             @Qualifier("gstProcessor") ItemProcessor<Expense, ExpenseWithGST> processor,
                             @Qualifier("gstWriter") ItemWriter<ExpenseWithGST> writer) {
+
         return new StepBuilder("convertStep", jobRepository)
                 .<Expense, ExpenseWithGST>chunk(500, transactionManager)
                 .reader(reader)
@@ -97,7 +78,18 @@ public class BatchConfig {
     }
 
 
-    // 🔹 Step: file -> MinIO
+    // * * Used to send email of the total amount & the
+    @Bean
+    public Job convertJob(Step convertStep, @Qualifier("emailAfterJobListener") JobExecutionListener emailListener) {
+        return new JobBuilder("convertJob", jobRepository)
+                .start(convertStep)
+                .listener(emailListener)
+                .incrementer(new RunIdIncrementer())
+                .build();
+    }
+
+
+    // * 🔹 Step: file -> MinIO
     @Bean
     public Step saveToMinioStep(ItemReader<File> fileReader,
                                 ItemWriter<File> minioWriter) {
@@ -113,7 +105,7 @@ public class BatchConfig {
         return new JobBuilder("saveFileToMinioJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .start(saveToMinioStep)
-                .listener(listener) // <-- add this
+                .listener(listener)
                 .build();
     }
 }

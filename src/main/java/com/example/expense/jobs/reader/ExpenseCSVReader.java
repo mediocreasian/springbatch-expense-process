@@ -30,9 +30,6 @@ import java.time.format.DateTimeFormatter;
 public class ExpenseCSVReader {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d/M/yyyy");
 
-    @Autowired
-    private MinioClient minioClient;
-
     // Reads a CSV file from path passed as job parameter
     @Bean
     @StepScope
@@ -47,7 +44,7 @@ public class ExpenseCSVReader {
     //  Read from MinIO Bucket
     @Bean
     @StepScope
-    public FlatFileItemReader<Expense> expenseMinioReader(@Value("#{jobParameters['objectName']}") String objectName) throws Exception {
+    public FlatFileItemReader<Expense> expenseMinioReader(@Value("#{jobParameters['objectName']}") String objectName,MinioClient minioClient) throws Exception {
         InputStream inputStream = minioClient.getObject(
                 GetObjectArgs.builder()
                         .bucket("uploads")

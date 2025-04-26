@@ -17,6 +17,7 @@ public class GstCsvWriter {
         writer.setResource(new FileSystemResource("output/converted_expenses.csv"));
         writer.setAppendAllowed(false);
         writer.setHeaderCallback(w -> w.write("Date,Amount,GST Rate,GST Amount"));
+        // * Writes data per each column of the converted_expense.csv
         writer.setLineAggregator(new DelimitedLineAggregator<>() {{
             setDelimiter(",");
             setFieldExtractor(item -> new Object[] {

@@ -20,7 +20,6 @@ import java.nio.file.Paths;
 import java.util.List;
 
 
-
 @Configuration
 public class EmailAfterJobListener {
 
@@ -32,7 +31,6 @@ public class EmailAfterJobListener {
 
         return new JobExecutionListener() {
             @Override
-
             public void afterJob(JobExecution jobExecution) {
                 try {
                     Path path = Paths.get("output/converted_expenses.csv");
